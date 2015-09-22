@@ -100,7 +100,7 @@ int display_stateid_other(struct display_buffer *dspbuf, char *other)
 	if (b_left <= 0)
 		return b_left;
 
-	b_left = display_cat(dspbuf, " {{CLIENTID ");
+	b_left = display_cat(dspbuf, " {CLIENTID ");
 
 	if (b_left <= 0)
 		return b_left;
@@ -110,7 +110,7 @@ int display_stateid_other(struct display_buffer *dspbuf, char *other)
 	if (b_left <= 0)
 		return b_left;
 
-	return display_printf(dspbuf, "} StateIdCounter=0x%08"PRIx32"}", count);
+	return display_printf(dspbuf, " StateIdCounter=0x%08"PRIx32"}", count);
 }
 
 /**
@@ -184,19 +184,9 @@ int display_stateid(struct display_buffer *dspbuf, state_t *state)
 	int b_left;
 	cache_entry_t *entry;
 
-	if (state == NULL)
-		return display_cat(dspbuf, "STATE <NULL>");
-
 	PTHREAD_MUTEX_lock(&state->state_mutex);
 	entry = state->state_entry;
 	PTHREAD_MUTEX_unlock(&state->state_mutex);
-
-	b_left = display_printf(dspbuf,
-				"STATE %p ",
-				state);
-
-	if (b_left <= 0)
-		return b_left;
 
 	b_left = display_stateid_other(dspbuf, state->stateid_other);
 
@@ -204,7 +194,9 @@ int display_stateid(struct display_buffer *dspbuf, state_t *state)
 		return b_left;
 
 	b_left = display_printf(dspbuf,
-				" entry=%p type=%s seqid=%"PRIu32" owner={",
+				" STATE %p entry=%p type=%s seqid=%"PRIu32
+				" owner={",
+				state,
 				entry,
 				str_state_type(state),
 				state->state_seqid);
@@ -373,7 +365,8 @@ uint32_t state_entry_value_hash_func(hash_parameter_t *hparam,
 	res = ((uint32_t) pkey->state_owner->so_owner.so_nfs4_owner.so_clientid
 	      + (uint32_t) sum + pkey->state_owner->so_owner_len
 	      + (uint32_t) pkey->state_owner->so_type
-	      + (uintptr_t) pkey->state_entry) % (uint32_t) hparam->index_size;
+	      + (uint32_t) (uint64_t) pkey->state_entry)
+						% (uint32_t) hparam->index_size;
 
 	if (isDebug(COMPONENT_HASHTABLE))
 		LogFullDebug(COMPONENT_STATE, "value = %" PRIu32, res);
@@ -408,7 +401,7 @@ uint64_t state_entry_rbt_hash_func(hash_parameter_t *hparam,
 	res = (uint64_t) pkey->state_owner->so_owner.so_nfs4_owner.so_clientid
 	      + (uint64_t) sum + pkey->state_owner->so_owner_len
 	      + (uint64_t) pkey->state_owner->so_type
-	      + (uintptr_t) pkey->state_entry;
+	      + (uint64_t) pkey->state_entry;
 
 	if (isDebug(COMPONENT_HASHTABLE))
 		LogFullDebug(COMPONENT_STATE, "rbt = %" PRIu64, res);
@@ -526,7 +519,6 @@ int nfs4_State_Set(state_t *state)
 {
 	struct gsh_buffdesc buffkey;
 	struct gsh_buffdesc buffval;
-	hash_error_t err;
 
 	buffkey.addr = state->stateid_other;
 	buffkey.len = OTHERSIZE;
@@ -534,21 +526,19 @@ int nfs4_State_Set(state_t *state)
 	buffval.addr = state;
 	buffval.len = sizeof(state_t);
 
-	err = hashtable_test_and_set(ht_state_id,
-				     &buffkey,
-				     &buffval,
-				     HASHTABLE_SET_HOW_SET_NO_OVERWRITE);
-
-	if (err != HASHTABLE_SUCCESS) {
+	if (hashtable_test_and_set(ht_state_id,
+				   &buffkey,
+				   &buffval,
+				   HASHTABLE_SET_HOW_SET_NO_OVERWRITE)
+	    != HASHTABLE_SUCCESS) {
 		LogCrit(COMPONENT_STATE,
-			"hashtable_test_and_set failed %s for key %p",
-			hash_table_err_to_str(err), buffkey.addr);
+			"hashtable_test_and_set failed for key %p",
+			buffkey.addr);
 		return 0;
 	}
 
-	/* If stateid is a LOCK or SHARE state, we also index by entry/owner */
-	if (state->state_type != STATE_TYPE_LOCK &&
-	    state->state_type != STATE_TYPE_SHARE)
+	/* If stateid is a LOCK state, we also index by entry/owner */
+	if (state->state_type != STATE_TYPE_LOCK)
 		return 1;
 
 	buffkey.addr = state;
@@ -557,39 +547,20 @@ int nfs4_State_Set(state_t *state)
 	buffval.addr = state;
 	buffval.len = sizeof(state_t);
 
-	err = hashtable_test_and_set(ht_state_entry,
-				     &buffkey,
-				     &buffval,
-				     HASHTABLE_SET_HOW_SET_NO_OVERWRITE);
-
-	if (err != HASHTABLE_SUCCESS) {
+	if (hashtable_test_and_set(ht_state_entry,
+				   &buffkey,
+				   &buffval,
+				   HASHTABLE_SET_HOW_SET_NO_OVERWRITE)
+	    != HASHTABLE_SUCCESS) {
 		struct gsh_buffdesc buffkey, old_key, old_value;
+		hash_error_t err;
 
 		buffkey.addr = state->stateid_other;
 		buffkey.len = OTHERSIZE;
 
 		LogCrit(COMPONENT_STATE,
-			"hashtable_test_and_set failed %s for key %p",
-			hash_table_err_to_str(err), buffkey.addr);
-
-		if (isFullDebug(COMPONENT_STATE)) {
-			char str[LOG_BUFF_LEN];
-			struct display_buffer dspbuf = {sizeof(str), str, str};
-			state_t *state2;
-
-			display_stateid(&dspbuf, state);
-			LogCrit(COMPONENT_STATE, "State %s", str);
-			state2 = nfs4_State_Get_Entry(state->state_entry,
-						      state->state_owner);
-			if (state2 != NULL) {
-				display_reset_buffer(&dspbuf);
-				display_stateid(&dspbuf, state2);
-
-				LogCrit(COMPONENT_STATE,
-					"Duplicate State %s",
-					str);
-			}
-		}
+			"hashtable_test_and_set failed for key %p",
+			buffkey.addr);
 
 		err = HashTable_Del(ht_state_id, &buffkey,
 				    &old_key, &old_value);
@@ -725,11 +696,8 @@ bool nfs4_State_Del(state_t *state)
 
 	assert(state == old_value.addr);
 
-	/* If stateid is a LOCK or SHARE state, we had also indexed by
-	 * entry/owner
-	 */
-	if (state->state_type != STATE_TYPE_LOCK &&
-	    state->state_type != STATE_TYPE_SHARE)
+	/* If stateid is a LOCK state, we had also indexed by entry/owner */
+	if (state->state_type != STATE_TYPE_LOCK)
 		return true;
 
 	/* Delete the stateid hashed by entry/owner.

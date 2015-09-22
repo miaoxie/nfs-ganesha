@@ -91,7 +91,8 @@ static inline int open_by_handle_at(int mdirfd, struct file_handle *handle,
 #define O_NOACCESS O_ACCMODE
 #endif
 
-static inline int vfs_stat_by_handle(int mountfd, struct stat *buf)
+static inline int vfs_stat_by_handle(int mountfd, vfs_file_handle_t *fh,
+				     struct stat *buf, int flags)
 {
 	/* Must use fstatat() even though fstat() seems like it might
 	 * work, the Linux version rejects the file descriptor we've

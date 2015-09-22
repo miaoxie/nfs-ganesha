@@ -144,13 +144,7 @@ static fsal_status_t lookup_path(struct fsal_export *export_pub,
 		goto out;
 	}
 
-#ifdef USE_GLUSTER_SYMLINK_MOUNT
-		glhandle = glfs_h_lookupat(glfs_export->gl_fs, NULL, realpath,
-					&sb, 1);
-#else
-		glhandle = glfs_h_lookupat(glfs_export->gl_fs, NULL, realpath,
-					&sb);
-#endif
+	glhandle = glfs_h_lookupat(glfs_export->gl_fs, NULL, realpath, &sb);
 	if (glhandle == NULL) {
 		status = gluster2fsal_error(errno);
 		goto out;
@@ -212,7 +206,7 @@ static fsal_status_t extract_handle(struct fsal_export *exp_hdl,
 	fh_size = GLAPI_HANDLE_LENGTH;
 	if (fh_desc->len != fh_size) {
 		LogMajor(COMPONENT_FSAL,
-			 "Size mismatch for handle.  should be %zu, got %zu",
+			 "Size mismatch for handle.  should be %lu, got %lu",
 			 fh_size, fh_desc->len);
 		return fsalstat(ERR_FSAL_SERVERFAULT, 0);
 	}

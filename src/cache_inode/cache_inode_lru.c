@@ -708,7 +708,7 @@ lru_run(struct fridgethr_context *ctx)
 		lru_state.futility = 0;
 	}
 
-	LogFullDebug(COMPONENT_CACHE_INODE_LRU, "lru entries: %" PRIu64,
+	LogFullDebug(COMPONENT_CACHE_INODE_LRU, "lru entries: %zu",
 		     lru_state.entries_used);
 
 	/* Reap file descriptors.  This is a preliminary example of the
@@ -745,7 +745,7 @@ lru_run(struct fridgethr_context *ctx)
 		LogFullDebug(COMPONENT_CACHE_INODE_LRU,
 			     "fdrate:%u fdcount:%zd slept for %" PRIu64 " sec",
 			     fdratepersec, formeropen,
-			     ((uint64_t) (curr_time - lru_state.prev_time)));
+			     curr_time - lru_state.prev_time);
 
 		if (extremis) {
 			LogDebug(COMPONENT_CACHE_INODE_LRU,
@@ -925,8 +925,7 @@ lru_run(struct fridgethr_context *ctx)
 		 "After work, open_fd_count:%zd  count:%" PRIu64
 		 " fdrate:%u threadwait=%" PRIu64,
 		 atomic_fetch_size_t(&open_fd_count),
-		 lru_state.entries_used, fdratepersec,
-		 ((uint64_t) threadwait));
+		 lru_state.entries_used, fdratepersec, threadwait);
 	LogFullDebug(COMPONENT_CACHE_INODE_LRU,
 		     "currentopen=%zd futility=%d totalwork=%zd biggest_window=%d extremis=%d lanes=%d fds_lowat=%d ",
 		     currentopen, lru_state.futility, totalwork,

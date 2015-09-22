@@ -122,10 +122,17 @@ int _9p_symlink(struct _9p_request_data *req9p, u32 *plenout, char *preply)
 				  preply);
 	}
 
-	fileid = cache_inode_fileid(pentry_symlink);
+	cache_status = cache_inode_fileid(pentry_symlink, &fileid);
 
-	/* put the entry. */
+	/* put the entry:
+	 * we don't want to remember it even if cache_inode_fileid fails. */
 	cache_inode_put(pentry_symlink);
+
+	if (cache_status != CACHE_INODE_SUCCESS) {
+		return _9p_rerror(req9p, msgtag,
+				  _9p_tools_errno(cache_status), plenout,
+				  preply);
+	}
 
 	/* Build the qid */
 	qid_symlink.type = _9P_QTSYMLINK;

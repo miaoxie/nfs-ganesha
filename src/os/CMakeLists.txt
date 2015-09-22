@@ -17,6 +17,7 @@ endif(FREEBSD)
 
 if(LINUX)
   SET(gos_STAT_SRCS
+      linux/mntent.c
       linux/subr.c
   )
 endif(LINUX)

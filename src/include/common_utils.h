@@ -525,7 +525,7 @@ static inline void now(struct timespec *ts)
 
 static inline int strmaxcpy(char *dest, const char *src, size_t dest_size)
 {
-	size_t len = strlen(src);
+	int len = strlen(src);
 
 	if (len >= dest_size)
 		return -1;

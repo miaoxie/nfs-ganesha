@@ -97,7 +97,6 @@ enum commands {
 	CMD_COMMENT,
 	CMD_ALARM,
 	CMD_HELLO,
-	CMD_FORK,
 	CMD_QUIT,
 	NUM_COMMANDS
 };

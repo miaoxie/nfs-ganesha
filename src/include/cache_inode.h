@@ -112,7 +112,7 @@ struct cache_inode_parameter {
 	uint32_t entries_hwmark;
 	/** Base interval in seconds between runs of the LRU cleaner
 	    thread. Defaults to 60, settable with LRU_Run_Interval. */
-	uint32_t lru_run_interval;
+	time_t lru_run_interval;
 	/** Whether to cache open files.  Defaults to true, settable
 	    with Cache_FDs. */
 	bool use_fd_cache;
@@ -751,7 +751,8 @@ cache_inode_status_t cache_inode_getattr(cache_entry_t *entry,
 					 cache_inode_getattr_cb_t cb,
 					 enum cb_state cb_state);
 
-uint64_t cache_inode_fileid(cache_entry_t *entry);
+cache_inode_status_t cache_inode_fileid(cache_entry_t *entry,
+					uint64_t *fileid);
 
 cache_inode_status_t cache_inode_fsid(cache_entry_t *entry,
 				      fsal_fsid_t *fsid);

@@ -157,7 +157,13 @@ int _9p_walk(struct _9p_request_data *req9p, u32 *plenout, char *preply)
 		pnewfid->export = pfid->export;
 		pnewfid->ucred = pfid->ucred;
 
-		fileid = cache_inode_fileid(pnewfid->pentry);
+		cache_status = cache_inode_fileid(pnewfid->pentry, &fileid);
+		if (cache_status != CACHE_INODE_SUCCESS) {
+			gsh_free(pnewfid);
+			return _9p_rerror(req9p, msgtag,
+					  _9p_tools_errno(cache_status),
+					  plenout, preply);
+		}
 
 		/* Build the qid */
 		/* No cache, we want the client to stay synchronous

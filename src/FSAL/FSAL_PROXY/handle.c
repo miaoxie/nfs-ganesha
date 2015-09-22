@@ -907,7 +907,7 @@ static void *pxy_clientid_renewer(void *Arg)
 
 		if (!needed && pxy_rpc_renewer_wait(lease_time - 5)) {
 			/* Simply renew the client id you've got */
-			LogDebug(COMPONENT_FSAL, "Renewing client id %" PRIx64,
+			LogDebug(COMPONENT_FSAL, "Renewing client id %lx",
 				 pxy_clientid);
 			arg.argop = NFS4_OP_RENEW;
 			arg.nfs_argop4_u.oprenew.clientid = pxy_clientid;
@@ -915,8 +915,7 @@ static void *pxy_clientid_renewer(void *Arg)
 						    &res);
 			if (rc == NFS4_OK) {
 				LogDebug(COMPONENT_FSAL,
-					 "Renewed client id %" PRIx64,
-					 pxy_clientid);
+					 "Renewed client id %lx", pxy_clientid);
 				continue;
 			}
 		}
@@ -2224,7 +2223,7 @@ fsal_status_t pxy_extract_handle(struct fsal_export *exp_hdl,
 #endif
 	if (fh_desc->len != fh_size) {
 		LogMajor(COMPONENT_FSAL,
-			 "Size mismatch for handle.  should be %zu, got %zu",
+			 "Size mismatch for handle.  should be %lu, got %lu",
 			 fh_size, fh_desc->len);
 		return fsalstat(ERR_FSAL_SERVERFAULT, 0);
 	}

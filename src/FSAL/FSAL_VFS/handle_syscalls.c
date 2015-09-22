@@ -61,7 +61,7 @@ int vfs_readlink(struct vfs_fsal_obj_handle *myself,
 	if (fd < 0)
 		return fd;
 
-	retval = vfs_stat_by_handle(fd, &st);
+	retval = vfs_stat_by_handle(fd, myself->handle, &st, flags);
 	if (retval < 0)
 		goto error;
 
