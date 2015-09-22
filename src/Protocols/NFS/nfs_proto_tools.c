@@ -212,7 +212,6 @@ bool nfs_RetryableError(cache_inode_status_t cache_status)
 	case CACHE_INODE_NOT_SUPPORTED:
 	case CACHE_INODE_UNION_NOTSUPP:
 	case CACHE_INODE_NAME_TOO_LONG:
-	case CACHE_INODE_STATE_CONFLICT:
 	case CACHE_INODE_ASYNC_POST_ERROR:
 	case CACHE_INODE_STATE_ERROR:
 	case CACHE_INODE_BAD_COOKIE:
@@ -221,7 +220,8 @@ bool nfs_RetryableError(cache_inode_status_t cache_status)
 	case CACHE_INODE_FSAL_XDEV:
 	case CACHE_INODE_FSAL_MLINK:
 	case CACHE_INODE_TOOSMALL:
-	case CACHE_INODE_FSAL_SHARE_DENIED:
+	case CACHE_INODE_SHARE_DENIED:
+	case CACHE_INODE_LOCKED:
 	case CACHE_INODE_SERVERFAULT:
 	case CACHE_INODE_BADNAME:
 	case CACHE_INODE_CROSS_JUNCTION:
@@ -3715,7 +3715,8 @@ bool nfs3_FSALattr_To_Fattr(struct gsh_export *export,
 	nfs3_FSALattr_To_PartialFattr(FSAL_attr, &got, Fattr);
 	if (want & ~got) {
 		LogCrit(COMPONENT_NFSPROTO,
-			"Likely bug: FSAL did not fill in a standard NFSv3 attribute: missing %lx",
+			"Likely bug: FSAL did not fill in a standard NFSv3 attribute: missing %"
+			PRIx64,
 			want & ~got);
 	}
 
@@ -4206,6 +4207,9 @@ bool is_sticky_bit_set(const struct attrlist *attr)
 	if (!(attr->mode & S_ISVTX))
 		return false;
 
-	LogDebug(COMPONENT_NFS_V4, "sticky bit is set on %ld", attr->fileid);
+	LogDebug(COMPONENT_NFS_V4,
+		 "sticky bit is set on %" PRIi64,
+		 attr->fileid);
+
 	return true;
 }

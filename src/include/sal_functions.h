@@ -339,7 +339,7 @@ void nfs41_Session_PrintAll(void);
  *
  ******************************************************************************/
 
-#define DISPLAY_STATEID_OTHER_SIZE (DISPLAY_CLIENTID_SIZE + 48)
+#define DISPLAY_STATEID_OTHER_SIZE (DISPLAY_CLIENTID_SIZE + 72)
 
 int display_stateid_other(struct display_buffer *dspbuf, char *other);
 int display_stateid(struct display_buffer *dspbuf, state_t *state);
@@ -852,9 +852,6 @@ state_status_t state_share_downgrade(cache_entry_t *entry,
 
 state_status_t state_share_set_prev(state_t *state,
 				    union state_data *state_data);
-
-state_status_t state_share_check_prev(state_t *state,
-				      union state_data *state_data);
 
 enum share_bypass_modes {
 	SHARE_BYPASS_NONE,
